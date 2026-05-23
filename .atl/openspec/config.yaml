@@ -1,0 +1,43 @@
+# OpenSpec Configuration — Elena MVP
+
+version: "1.0"
+project: Elena
+
+execution:
+  mode: interactive
+  artifact_store: both # openspec + engram when available
+
+chained_pr:
+  strategy: chained
+  review_budget_lines: 1000
+  max_lines_per_pr: 1000
+
+strict_tdd:
+  enabled: false # MVP no tiene tests todavía, se armará después
+
+phases:
+  proposal: required
+  spec: required
+  design: required
+  tasks: required
+  apply: gated
+  verify: required
+  archive: optional
+
+skill_registry:
+  path: .atl/skill-registry.md
+  scan_paths:
+    - /home/yorch/.config/opencode/skills
+    - /home/yorch/.claude/skills
+    - /home/yorch/.copilot/skills
+    - /home/yorch/.codex/skills
+
+tech_stack:
+  language: go
+  framework: bubble-tea
+  ecosystem:
+    - charm.gum
+    - charm.lipgloss
+
+change_id: cli-skeleton
+change_title: "CLI Skeleton — TUI Base + Avatar Animado"

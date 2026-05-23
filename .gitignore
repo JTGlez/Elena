@@ -1,3 +1,4 @@
 # Local Pi runtime state
-.atl/
 .pi/
+*/skill-registry.md
+*/.skill-registry.cache.json
