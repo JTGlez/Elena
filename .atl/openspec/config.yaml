@@ -13,7 +13,7 @@ chained_pr:
   max_lines_per_pr: 1000
 
 strict_tdd:
-  enabled: false # MVP no tiene tests todavía, se armará después
+  enabled: true # We use go-unit-testing skill to implement unit tests before implementation
 
 phases:
   proposal: required

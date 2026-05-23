@@ -1,13 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
 	"elena/internal/app"
-	"elena/internal/infrastructure/entrypoints"
+	"elena/internal/infrastructure/adapters/tui/bubbletea"
 )
 
 func main() {
 	a := app.Wire()
-	if err := entrypoints.StartTUI(a); err != nil {
-		panic(err)
+	m := bubbletea.NewModel(a)
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("could not start: %v\n", err)
+		os.Exit(1)
 	}
 }

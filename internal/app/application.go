@@ -13,7 +13,3 @@ func Wire() *App {
 }
 
 func (a *App) Session() *domain.Session { return a.session }
-
-func (a *App) Start() error {
-	return nil
-}
