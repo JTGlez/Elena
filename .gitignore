@@ -1,4 +1,5 @@
 # Local Pi runtime state
 .pi/
+.pi-lens/
 */skill-registry.md
 */.skill-registry.cache.json
