@@ -1,40 +1,59 @@
 package bubbletea
 
 import (
-	"strings"
+	"time"
 
-	"elena/internal/app"
+	"github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"elena/internal/core/domain"
-	"elena/internal/core/ports/output"
-
-	tea "github.com/charmbracelet/bubbletea"
+	"elena/internal/core/usecases/chat"
+	"elena/internal/core/usecases/identity"
+	"elena/internal/infrastructure/adapters/tui"
+	"elena/internal/infrastructure/adapters/tui/input"
+	"elena/internal/infrastructure/adapters/tui/output"
 )
 
-// Compile-time check that model satisfies tea.Model.
+// compile-time check that model satisfies tea.Model
 var _ tea.Model = (*model)(nil)
 
 type model struct {
-	app         *app.App
-	currentInput string
-	displayPort output.DisplayPort
+	session         *domain.Session
+	chatUseCase     *chat.ChatUseCase
+	identityUseCase *identity.IdentityUseCase
+	avatar          *tui.Avatar
+	cmdHandler      *input.CommandHandler
+	currentInput    string
+	renderer        *output.Renderer
+	quit            bool
 }
 
-// NewModel creates a new BubbleTea model with the given app and display port.
-func NewModel(a *app.App, display output.DisplayPort) tea.Model {
-	return model{
-		app:         a,
-		displayPort: display,
+// NewModel creates a new BubbleTea model wired with domain session and use cases.
+func NewModel(session *domain.Session, chatUC *chat.ChatUseCase, identityUC *identity.IdentityUseCase) *model {
+	return &model{
+		session:         session,
+		chatUseCase:     chatUC,
+		identityUseCase: identityUC,
+		avatar:          tui.NewAvatar(session.Mood()),
+		cmdHandler:      input.NewCommandHandler(identityUC),
+		currentInput:    "",
+		renderer:        output.NewRenderer(),
+		quit:            false,
 	}
 }
 
-// Init returns the initial command (none for this model).
-func (m model) Init() tea.Cmd {
-	return nil
+func (m *model) Init() tea.Cmd {
+	// Ticker: 500ms per frame for avatar animation
+	return tea.Every(time.Millisecond*500, func(t time.Time) tea.Msg {
+		return tickMsg{}
+	})
 }
 
-// Update handles incoming messages.
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tickMsg:
+		m.avatar.Tick()
+		return m, nil
+
 	case tea.KeyMsg:
 		key := msg.String()
 		if key == "q" || key == "ctrl+c" {
@@ -44,9 +63,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.currentInput) == 0 {
 				return m, nil
 			}
-			// TODO: wire chatUseCase in PR-3 — for now just clear input
-			m.currentInput = ""
-			return m, nil
+			if cmd, ok := m.cmdHandler.Parse(m.currentInput); ok {
+				return m, m.handleCommand(cmd)
+			}
+			// Wire chatUseCase — executes in a goroutine via tea.Cmd
+			return m, func() tea.Msg {
+				m.chatUseCase.Execute(nil, m.session, m.currentInput)
+				m.avatar.SetMood(m.session.Mood())
+				m.currentInput = ""
+				return renderMsg{}
+			}
 		}
 		if key == "backspace" {
 			if len(m.currentInput) > 0 {
@@ -55,28 +81,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if msg.Type == tea.KeyRunes {
 			m.currentInput += msg.String()
 		}
+
+	case renderMsg:
+		// Force re-render after async operations
+		return m, nil
 	}
+
 	return m, nil
 }
 
-// View renders the current state of the TUI.
-func (m model) View() string {
-	session := m.app.Session()
-	lines := []string{"Elena MVP — Skeleton", ""}
-
-	msgs := session.Messages()
-	for _, msg := range msgs {
-		prefix := "> "
-		if msg.Author() == domain.AuthorElena {
-			prefix = "Elena: "
-		}
-		lines = append(lines, prefix+msg.Content())
+func (m *model) View() string {
+	if m.quit {
+		return lipgloss.NewStyle().Render("¡Hasta luego!\n")
 	}
-
-	lines = append(lines, "")
-	lines = append(lines, "> "+m.currentInput+"_")
-	lines = append(lines, "")
-	lines = append(lines, "(q to quit)")
-
-	return strings.Join(lines, "\n") + "\n"
+	return m.renderer.Render(m.session, m.avatar, m.currentInput)
 }
+
+func (m *model) handleCommand(cmd string) tea.Cmd {
+	return func() tea.Msg {
+		response := m.cmdHandler.Execute(cmd, m.session)
+		if cmd == "/exit" {
+			m.quit = true
+		}
+		m.currentInput = ""
+		_ = response // response shown via DisplayPort in full impl; for MVP just execute
+		return renderMsg{}
+	}
+}
+
+type renderMsg struct{}
+
+type tickMsg struct{}

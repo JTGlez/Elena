@@ -7,12 +7,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"elena/internal/app"
 	"elena/internal/infrastructure/adapters/tui/bubbletea"
-	"elena/internal/infrastructure/adapters/tui/output"
 )
 
 func main() {
 	a := app.Wire()
-	m := bubbletea.NewModel(a, &output.TUIDisplay{})
+	m := bubbletea.NewModel(
+		a.Session(),
+		a.ChatUseCase(),
+		a.IdentityUseCase(),
+	)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("could not start: %v\n", err)
