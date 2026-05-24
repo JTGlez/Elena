@@ -27,7 +27,7 @@ func TestRenderer_Render_SessionWithMessages(t *testing.T) {
 	sess := buildSession(scenario.givenMessages)
 	givenAvatar := tui.NewAvatar(domain.MoodIdle)
 	r := output.NewRenderer()
-	result := r.Render(sess, givenAvatar, scenario.givenInput)
+	result := r.Render(sess, givenAvatar, scenario.givenInput, "")
 
 	for _, expected := range scenario.expectedContains {
 		if !strings.Contains(result, expected) {
@@ -42,7 +42,7 @@ func TestRenderer_Render_EmptySession(t *testing.T) {
 	sess := buildSession(scenario.givenMessages)
 	givenAvatar := tui.NewAvatar(domain.MoodIdle)
 	r := output.NewRenderer()
-	result := r.Render(sess, givenAvatar, scenario.givenInput)
+	result := r.Render(sess, givenAvatar, scenario.givenInput, "")
 
 	for _, expected := range scenario.expectedContains {
 		if !strings.Contains(result, expected) {
@@ -57,7 +57,7 @@ func TestRenderer_Render_AvatarContainsEyes(t *testing.T) {
 	sess := buildSession(scenario.givenMessages)
 	givenAvatar := tui.NewAvatar(domain.MoodIdle)
 	r := output.NewRenderer()
-	result := r.Render(sess, givenAvatar, scenario.givenInput)
+	result := r.Render(sess, givenAvatar, scenario.givenInput, "")
 
 	for _, expected := range scenario.expectedContains {
 		if !strings.Contains(result, expected) {

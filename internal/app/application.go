@@ -13,13 +13,16 @@ type App struct {
 	session         *domain.Session
 	chatUseCase     *chat.ChatUseCase
 	identityUseCase *identity.IdentityUseCase
+	displayPort     *output.TUIDisplay
 }
 
 // Wire assembles the application dependencies and returns a wired App.
+// The displayPort is created without a notification callback — set it after
+// the BubbleTea model is created: app.DisplayPort().Notify = model.SetNotification
 func Wire() *App {
 	mockService := mock.NewService()
 
-	displayPort := &output.TUIDisplay{}
+	displayPort := output.NewTUIDisplay()
 
 	chatUC := chat.New(chat.Input{
 		ResponsePort: mockService,
@@ -34,6 +37,7 @@ func Wire() *App {
 		session:         domain.NewSession("session-1"),
 		chatUseCase:     chatUC,
 		identityUseCase: identityUC,
+		displayPort:     displayPort,
 	}
 }
 
@@ -45,3 +49,8 @@ func (a *App) ChatUseCase() *chat.ChatUseCase { return a.chatUseCase }
 
 // IdentityUseCase returns the identity use case.
 func (a *App) IdentityUseCase() *identity.IdentityUseCase { return a.identityUseCase }
+
+// DisplayPort returns the TUI display port.
+// Wire the notification callback after the model is created:
+//   app.DisplayPort().Notify = model.SetNotification
+func (a *App) DisplayPort() *output.TUIDisplay { return a.displayPort }
